@@ -1,5 +1,5 @@
 # AISSP
-AI Spawn Script Pack
+AI Spawn Script Pack - ARMA3
 
 Hey!
 
