@@ -34,30 +34,33 @@ while{_run}do{
 	_pDir = random 360;
     _pRange = (_radius select 0) + (random (_radius select 1));
     _newPos = [(_newCenter select 0) + (sin _pDir) * _pRange, (_newCenter select 1) + (cos _pDir) * _pRange, 0];
-   
+
 	if(surfaceIsWater _newPos)then{
 			private["_randomWay","_dir"];
 			_dir = ((_newCenter select 0) - (_newPos select 0)) atan2 ((_newCenter select 1) - (_newPos select 1));
-			_randomWay = floor(random 2); 
+			_randomWay = floor(random 2);
 			while{surfaceIsWater _newPos}do{
 				if(_randomWay == 0)then{_dir = _dir + 20;}else{_dir = _dir - 20;};
-				if(_dir < 0) then {_dir = _dir + 360;}; 
+				if(_dir < 0) then {_dir = _dir + 360;};
 				_newPos = [(_newCenter select 0) + (sin _dir) * _pRange, (_newCenter select 1) + (cos _dir) * _pRange, 0];
+				sleep 0.001;
 			};
 	};
-	
+
     _pos = _newPos;
-		
+
     {
         _x doMove _newPos;
         _x setBehaviour "SAFE";
         _x limitSpeed 1;
+		sleep 0.001;
     } foreach _crew;
-	
+
 	if({alive _x} count crew _unit == 0)exitWith{_run = false};
-    waitUntil {(unitReady _unit)||(_unit distance _pos)<30};
+    waitUntil {sleep 0.013;(unitReady _unit)||(_unit distance _pos)<30};
 
-	
+	_break = _unit getVariable "breakPatrol";
+	if(!isNil("_break"))exitWith{};
     //sleep 5 + (random 10);
+	sleep 0.001;
 };
-

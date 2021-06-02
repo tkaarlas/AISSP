@@ -1,24 +1,23 @@
 /*
-				***		ARMA3Alpha REINFORCEMENT CHOPPER SCRIPT v2.2 - by SPUn / lostvar	***
+				***		ARMA3Alpha REINFORCEMENT CHOPPER SCRIPT v3.5 - by SPUn / Kaarto Media	***
 						Position search parameters fix by -=XTRA=-
-	
+
 				Spawns chopper which transports infantry group to position and leaves after that
-				
+
 		Calling the script:
-		
+
 			default: 		nul = [this] execVM "LV\reinforcementChopper.sqf";
 			custom: 		nul = [spot,exact,side,type,captive,patrol,target,direction,distance,precise,
-								cycle,groupSize,skills,smoke,group,custom init,ID,MP] execVM "LV\reinforcementChopper.sqf";
-								
+								cycle,groupSize,skills,smoke,group,custom init,ID,MP,doors,classes] execVM "LV\reinforcementChopper.sqf";
+
 	Parameters:
-	
+
 	spot 	= 	landing spot 	(name of marker or object or unit, or position array) 									DEFAULT: this
 	exact 	= 	true or false 	(true = tries landing exactly on *spot, false = finds place where it fits) 				DEFAULT: true
 	side 	= 	1 or 2 or 3		(1 = west, 2 = east, 3 = independent)													DEFAULT: 2
-	type 	= 	number 			(Depends on side)																		DEFAULT: 1
-				WEST: 1 = B_Heli_Light_01_armed_F, 2 = B_Heli_Light_01_F, 3 = B_Heli_Transport_01_F
-				EAST: 1 = O_Heli_Attack_02_F, 2 = O_Heli_Attack_02_black_F, 3 = O_Heli_Light_02_F, 4 = O_Heli_Light_02_unarmed_F
-				INDEPENDENT: 1 = I_Heli_Transport_02_F
+	type 	= 	number (0 - X)	(Depends on config)																		DEFAULT: 0
+				1 = first element in config array
+				0 = random
 	captive = 	true/false 		(if true, enemies wont notice them before chopper has landed) 							DEFAULT: false
 	patrol 	= 	true/false 		(if false, units wont patrol in any way <- handy if you set (group player) as *group) 	DEFAULT: true
 	target 	= 	patrol target 	(patrolling target for infantry group, options:											DEFAULT: player
@@ -36,50 +35,53 @@
 	skills 		= 	"default" 	(default AI skills) 																					DEFAULT: "default"
 				or	number	=	0-1.0 = this value will be set to all AI skills, ex: 0.8
 				or	array	=	all AI skills invidiually in array, values 0-1.0, order:
-						[aimingAccuracy, aimingShake, aimingSpeed, spotDistance, spotTime, courage, commanding, general, endurance, reloadSpeed] 
-						ex: 	[0.75,0.5,0.6,0.85,0.9,1,1,0.75,1,1] 					
+						[aimingAccuracy, aimingShake, aimingSpeed, spotDistance, spotTime, courage, commanding, general, endurance, reloadSpeed]
+						ex: 	[0.75,0.5,0.6,0.85,0.9,1,1,0.75,1,1]
 	smoke		=	[LZ smoke, cover smokes, flare, chemlights] (if chopper uses these on landing spot)									DEFAULT: [false,false,false,false]
 	group 		= 	group name OR nil (if you want units in existing group, set it here. if this is left empty, new group is made) 		DEFAULT: nil
 	custom init = 	"init commands" (if you want something in init field of units, put it here) 										DEFAULT: nil
 					NOTE: Keep it inside quotes, and if you need quotes in init commands, you MUST use ' or "" instead of ",
 						 ex: "hint 'this is hint';"
 	ID 			= 	number (if you want to delete units this script creates, you'll need ID number for them)							DEFAULT: nil
-	MP			= 	true/false	true = 'landing spot' will automatically be one of alive non-captive players								DEFAULT: false
-	
-	EXAMPLE: 	nul = [player,false,2,3,false,true,player,"random",1000,true,false,8,0.75,[false,true,false,true],nil,nil,33,false] execVM "LV\reinforcementChopper.sqf";
+	MP			= 	true/false	true = 'landing spot' will automatically be one of alive non-captive players							DEFAULT: false
+	doors		=	true/false	true = units will close doors behind them while patrolling												DEFAULT: false
+	classes		=	array	(classes from config_aissp.hpp, defines which unit classnames are being used)								DEFAULT: ["ALL"]
+
+	EXAMPLE: 	nul = [player,false,2,3,false,true,player,"random",1000,true,false,8,0.75,[false,true,false,true],nil,nil,33,false,false,["ALL"]] execVM "LV\reinforcementChopper.sqf";
 */
 if (!isServer)exitWith{};
-private ["_BLUmen3","_mp","_smoke","_INDchoppers","_BLUchoppers","_OPFchoppers","_OPFarrays","_BLUarrays","_INDgrp","_INDhq","_INDmen","_OPFmen2","_BLUmen2","_captive","_patrol","_heliT","_chopperTypes","_chopperType","_setInit2","_setInit","_c0","_customInit","_tPos","_exactPos","_skls","_skills","_grpSize","_cycle","_precise","_man2","_direction","_distance","_targetM","_i2","_heliPad","_targetPos","_side","_targetMarker","_BLUmen","_OPFmen","_men","_hq","_grp1","_grp2","_man1","_man","_dir","_range","_pos","_heli","_vehSpots","_i","_wp1"];
+private ["_BLUmen3","_mp","_smoke","_choppers","_OPFarrays","_BLUarrays","_INDgrp","_INDhq","_INDmen","_OPFmen2","_BLUmen2","_captive","_patrol","_heliT","_chopperTypes","_chopperType","_setInit2","_setInit","_c0","_customInit","_tPos","_exactPos","_skls","_skills","_grpSize","_cycle","_precise","_man2","_direction","_distance","_targetM","_i2","_heliPad","_targetPos","_side","_targetMarker","_BLUmen","_OPFmen","_men","_hq","_grp1","_grp2","_man1","_man","_dir","_range","_pos","_heli","_vehSpots","_i","_wp1","_input","_logic","_isActivated"];
 
-//Extra options:
-_doorHandling = true;
-//
+private ["_tMarker","_mGroup","_smoo1","_smoo2","_smoo3","_smoo4","_classModule","_classModuleFilters"];
 
-//Check parameters:
-_tPos = if (count _this > 0) then {_this select 0};
-_exactPos = if (count _this > 1) then {_this select 1; }else{true;};
-_side = if (count _this > 2) then {_this select 2; }else{2;};
-_chopperType = if (count _this > 3) then {_this select 3; }else{3;};
-_captive = if (count _this > 4) then {_this select 4; }else{false;};
-_patrol = if (count _this > 5) then {_this select 5; }else{true;};
-_targetMarker = if (count _this > 6) then {_this select 6; }else{player;};
-_direction = if (count _this > 7) then {_this select 7; }else{"random";};
-_distance = if (count _this > 8) then {_this select 8; }else{1500;};
-_precise = if (count _this > 9) then {_this select 9; }else{true;};
-_cycle = if (count _this > 10) then {_this select 10; }else{false;};
-_grpSize = if (count _this > 11) then {_this select 11; }else{8;};
-_skills = if (count _this > 12) then {_this select 12; }else{"default";};
-_smoke = if (count _this > 13) then {_this select 13; }else{[false,false,false,false];};
-_grp2 = if (count _this > 14) then {_this select 14; }else{nil;};
-_customInit = if (count _this > 15) then {_this select 15; }else{nil;};
-_grpId = if (count _this > 16) then { _this select 16;} else {nil};
-_mp = if (count _this > 17) then { _this select 17;} else {false};
+_tPos = param [0];
+_exactPos = param [1,true];
+_side = param [2,2];
+_chopperType = param [3,0];
+_captive = param [4,false];
+_patrol = param [5,true];
+_targetMarker = param [6,player];
+_direction = param [7,"random"];
+_distance = param [8,1500];
+_precise = param [9,true];
+_cycle = param [10,false];
+_grpSize = param [11,8];
+_skills = param [12,"default"];
+_smoke = param [13,[false,false,false,false]];//[_smoo1,_smoo2,_smoo3,_smoo4];
+_grp2 = param [14,nil];
+//if(!isNil "_grp2")then{if(_grp2 == "nil")then{_grp2 = nil;};};
+_customInit = param [15,nil];
+if(!isNil "_customInit")then{if(_customInit == "nil")then{_customInit = nil;};};
+_grpId = param [16,nil];
+_mp = param [17,false];
+_doorHandling = param [18,false];
+_classModuleFilters = param [19,["ALL"]];
 
-if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compile preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
+if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compileFinal preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
 
 if(_mp)then{
 	_tPos = call LV_GetPlayers;
-	_targetPos = getPos(_tPos call BIS_fnc_selectRandom);
+	_targetPos = getPos (selectRandom _tPos);
 }else{
 	//Check if spot is marker, object, or position array:
 	if(_tPos in allMapMarkers)then{
@@ -110,101 +112,110 @@ if((_smoke select 0))then{
 };
 
 //Prepare functions:
-if(isNil("LV_ACskills"))then{LV_ACskills = compile preprocessFile "LV\LV_functions\LV_fnc_ACskills.sqf";};
-if(isNil("LV_RandomSpot"))then{LV_RandomSpot = compile preprocessFile "LV\LV_functions\LV_fnc_randomSpot.sqf";};
-if(isNil("LV_vehicleInit"))then{LV_vehicleInit = compile preprocessFile "LV\LV_functions\LV_fnc_vehicleInit.sqf";};
+if(isNil("LV_classnames"))then{LV_classnames = compileFinal preprocessFile "LV\LV_functions\LV_fnc_classnames.sqf";};
+if(isNil("LV_validateClassArrays"))then{LV_validateClassArrays = compileFinal preprocessFile "LV\LV_functions\LV_fnc_validateClassArrays.sqf";};
+if(isNil("LV_ACskills"))then{LV_ACskills = compileFinal preprocessFile "LV\LV_functions\LV_fnc_ACskills.sqf";};
+if(isNil("LV_RandomSpot"))then{LV_RandomSpot = compileFinal preprocessFile "LV\LV_functions\LV_fnc_randomSpot.sqf";};
+if(isNil("LV_vehicleInit"))then{LV_vehicleInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_vehicleInit.sqf";};
+if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
 
-//Unit arrays:
-_BLUmen = ["B_Soldier_A_F","B_soldier_AR_F","B_medic_F","B_engineer_F","B_soldier_exp_F","B_Soldier_GL_F","B_soldier_M_F","B_soldier_AA_F","B_soldier_AT_F","B_officer_F","B_soldier_repair_F","B_Soldier_F","B_soldier_LAT_F","B_Soldier_lite_F","B_Soldier_SL_F","B_Soldier_TL_F","B_soldier_AAR_F","B_soldier_AAA_F","B_soldier_AAT_F"];
-_BLUmen2 = ["B_recon_exp_F","B_recon_JTAC_F","B_recon_M_F","B_recon_medic_F","B_recon_F","B_recon_LAT_F","B_recon_TL_F","B_soldier_AAR_F","B_soldier_AAA_F","B_soldier_AAT_F"];
-_BLUmen3 = ["B_G_Soldier_A_F","B_G_soldier_AR_F","B_G_medic_F","B_G_engineer_F","B_G_soldier_exp_F","B_G_Soldier_GL_F","B_G_soldier_M_F","B_G_officer_F","B_G_Soldier_F","B_G_soldier_LAT_F","B_G_Soldier_lite_F","B_G_Soldier_SL_F","B_G_Soldier_TL_F"];
-_BLUarrays = [_BLUmen,_BLUmen2,_BLUmen3];
-_OPFmen = ["O_Soldier_A_F","O_soldier_AR_F","O_medic_F","O_engineer_F","O_soldier_exp_F","O_Soldier_GL_F","O_soldier_M_F","O_soldier_AA_F","O_soldier_AT_F","O_officer_F","O_soldier_repair_F","O_Soldier_F","O_soldier_LAT_F","O_Soldier_lite_F","O_Soldier_SL_F","O_Soldier_TL_F","O_soldier_AAR_F","O_soldier_AAA_F","O_soldier_AAT_F"];
-_OPFmen2 = ["O_recon_exp_F","O_recon_JTAC_F","O_recon_M_F","O_recon_medic_F","O_recon_F","O_recon_LAT_F","O_recon_TL_F","O_soldier_AAR_F","O_soldier_AAA_F","O_soldier_AAT_F"];
-_OPFarrays = [_OPFmen,_OPFmen2];
-_INDmen = ["I_Soldier_A_F","I_soldier_AR_F","I_medic_F","I_engineer_F","I_soldier_exp_F","I_Soldier_GL_F","I_soldier_M_F","I_soldier_AA_F","I_soldier_AT_F","I_officer_F","I_soldier_repair_F","I_Soldier_F","I_soldier_LAT_F","I_Soldier_lite_F","I_Soldier_SL_F","I_Soldier_TL_F","I_soldier_AAR_F","I_soldier_AAA_F","I_soldier_AAT_F"];
-
-_BLUchoppers = ["B_Heli_Light_01_armed_F","B_Heli_Light_01_F","B_Heli_Transport_01_F"];
-_OPFchoppers = ["O_Heli_Attack_02_F","O_Heli_Attack_02_black_F","O_Heli_Light_02_F","O_Heli_Light_02_unarmed_F"];
-_INDchoppers = ["I_Heli_Transport_02_F"];
+_choppers = ([_classModuleFilters,[(_side), 3]] call LV_classnames);
 
 _chopperTypes = [];
 
 //Side related group creation:
 switch(_side)do{
 	case 1:{
-		_hq = createCenter west;
+		_hq = [1] call LV_centerInit;
 		_grp1 = createGroup west;
 		if(isNil("_grp2"))then{_grp2 = createGroup west;}else{_grp2 = _grp2;};
-		_men = (_BLUarrays call BIS_fnc_selectRandom);
-		_chopperTypes = _BLUchoppers;
 	};
 	case 2:{
-		_hq = createCenter east;
+		_hq = [2] call LV_centerInit;
 		_grp1 = createGroup east;
 		if(isNil("_grp2"))then{_grp2 = createGroup east;}else{_grp2 = _grp2;};
-		_men = (_OPFarrays call BIS_fnc_selectRandom);
-		_chopperTypes = _OPFchoppers;
 	};
 	case 3:{
-		_hq = createCenter resistance;
+		_hq = [3] call LV_centerInit;
 		_grp1 = createGroup resistance;
 		if(isNil("_grp2"))then{_grp2 = createGroup resistance;}else{_grp2 = _grp2;};
-		_men = _INDmen;
-		_chopperTypes = _INDchoppers;
 	};
 };
 
-//If *exact* is false, find landing spot which is not close another ones: //THIS block is fixed by GITS, now choppers should land!
+_chopperTypes = [_choppers] call LV_validateClassArrays;
+if((count _chopperTypes) == 0)then{
+	_chopperTypes = ([[],[(_side), 3]] call LV_classnames);
+};
+_chopperTypes = selectRandom _chopperTypes;
+
+_men = ([_classModuleFilters,[(_side), 6]] call LV_classnames);
+_men = [_men] call LV_validateClassArrays;
+if((count _men) == 0)then{
+	_men = ([[],[(_side), 6]] call LV_classnames);
+};
+_men = selectRandom _men;
+
+//If *exact* is false, find landing spot which is not close another ones: //THIS block is fixed by GITS, now choppers should land!//yet another fix by SPUn
 if(!_exactPos)then{
-            if(isNil("REKA60padArray"))then{REKA60padArray = [];};
-            _finding = 1;
-            _ra = 20;//here
-            while{_finding > 0}do{
-     
-                    _tPos = [];
-                    while{count _tPos < 1}do{
-                            _spot = [_targetPos, _ra] call LV_RandomSpot;
-                            _tPos = _spot isflatempty [12,0,0.3,4,0,false,objnull];///here
-                            _ra = _ra + 10;//here
-                    };
-     
-                    sleep 0.001;
-                    _targetPos = _tPos;
-                    _e1 = 0;
-                    _finding = 0;
-     
-                    while{_e1<(count REKA60padArray)}do{
-                            if(((REKA60padArray select _e1) distance _targetPos)<15)then{_finding = 1;};
-                            _e1 = _e1 + 1;
-                    };
-            };
-            REKA60padArray set [(count REKA60padArray), _targetPos];
+	if(isNil("REKA60padArray"))then{REKA60padArray = [];};
+	_finding = 1;
+	_ra = 0;//here
+	while{_finding > 0}do{
+
+			_tPos = [];
+			while{count _tPos < 1}do{
+					//_spot = [_targetPos, _ra] call LV_RandomSpot;
+					//_tPos = _spot isFlatEmpty [12,-1,0.3,4,0,false,objnull];///here
+					_tPos = [_targetPos,0,(50+_ra),10,0,0.4,0] call BIS_fnc_findSafePos;
+					_ra = _ra + 10;//here
+					sleep 0.001;
+			};
+
+			sleep 0.03;
+			_targetPos = _tPos;
+			_e1 = 0;
+			_finding = 0;
+
+			while{_e1<(count REKA60padArray)}do{
+					if(((REKA60padArray select _e1) distance _targetPos)<15)then{_finding = 1;};
+					_e1 = _e1 + 1;
+					sleep 0.001;
+			};
+	};
+	REKA60padArray set [(count REKA60padArray), _targetPos];
 };
 
+if(_chopperType == 0)then{
+	_heliT = selectRandom _chopperTypes;
+}else{
+	_heliT = _chopperTypes select (_chopperType - 1);
+};
 
-
-_heliT = _chopperTypes select (_chopperType - 1);
-_heliPad = createVehicle ["Land_helipadEmpty_F", _targetPos, [], 0, "NONE"]; 
+_heliPad = createVehicle ["Land_helipadEmpty_F", _targetPos, [], 0, "NONE"];
 
 if(typeName _direction == "STRING")then{_dir = random 360;}else{_dir = _direction;};
 _range = _distance;
 _pos = [(_targetPos select 0) + (sin _dir) * _range, (_targetPos select 1) + (cos _dir) * _range, 0];
 _heli = createVehicle [_heliT, _pos, [], 0, "FLY"];
 
-if(_grpSize > (getNumber (configFile >> "CfgVehicles" >> _heliT >> "transportSoldier")))then{
-	_vehSpots = getNumber (configFile >> "CfgVehicles" >> _heliT >> "transportSoldier");
+private ["_numCargo","_cfg"];
+_cfg = (configFile >> "CfgVehicles" >> _heliT);
+_numCargo = count("if ( isText(_x >> 'proxyType') && { getText(_x >> 'proxyType') isEqualTo 'CPCargo' } ) then {true};"configClasses ( _cfg >> "Turrets" )) + getNumber ( _cfg >> "transportSoldier" );
+
+if(_grpSize > _numCargo)then{
+	_vehSpots = _numCargo;
 }else{
 	_vehSpots = _grpSize;
 };
 
-_man1 = _men select (floor(random(count _men)));
+_man1 = selectRandom _men;
 _man = _grp1 createUnit [_man1, _pos, [], 0, "NONE"];
 _man moveInDriver _heli;
 _man setUnitRank "SERGEANT";
 if(_precise)then{_man setBehaviour "CARELESS";};
 
 [_man,_heli,_targetPos] spawn {
+	private ["_man","_heli","_targetPos"];
 	_man = _this select 0;
 	_heli = _this select 1;
 	_targetPos = _this select 2;
@@ -223,24 +234,25 @@ if(_precise)then{_man setBehaviour "CARELESS";};
 	};
 };
 
-_i = 1; 
+_i = 1;
 for "_i" from 1 to _vehSpots do {
-	_man1 = _men select (floor(random(count _men)));
+	_man1 = selectRandom _men;
 	_man2 = _grp2 createUnit [_man1, _pos, [], 0, "NONE"];
 	if(typeName _skills != "STRING")then{_skls = [_man2,_skills] call LV_ACskills;};
 	_man2 moveInCargo _heli;
-	if(!isNil("_customInit"))then{ 
+	if(!isNil("_customInit"))then{
 		[_man2,_customInit] spawn LV_vehicleInit;
 	};
+	sleep 0.001;
 };
 if((_vehSpots == 0)&&(_grpSize > 0))then{
-	_man1 = _men select (floor(random(count _men)));
+	_man1 = selectRandom _men;
 	_man2 = _grp2 createUnit [_man1, _pos, [], 0, "NONE"];
 	if(typeName _skills != "STRING")then{_skls = [_man2,_skills] call LV_ACskills;};
 	_man2 moveInTurret [_heli, [0]];
-	if(!isNil("_customInit"))then{ 
+	if(!isNil("_customInit"))then{
 		[_man2,_customInit] spawn LV_vehicleInit;
-	}; 
+	};
 };
 
 if(!isNil("_grpId"))then{
@@ -248,15 +260,19 @@ if(!isNil("_grpId"))then{
 };
 
 if(_captive)then{
-	{ _x setCaptive true; }forEach units _grp1;
-	{ _x setCaptive true; }forEach units _grp2;
+	{ _x setCaptive true;sleep 0.001; }forEach units _grp1;
+	{ _x setCaptive true;sleep 0.001; }forEach units _grp2;
 };
 
 _heli doMove _targetPos;
 while { _heli distance _targetPos > 260 } do { sleep 4; };
+(driver _heli) setBehaviour "CARELESS";
+//while {!(unitReady _heli)}do{sleep 2;};
 doStop _heli;
+_heli disableAI "TARGET";_heli disableAI "AUTOTARGET";_heli allowFleeing 0;_heli setBehaviour "CARELESS";
 _heli land "LAND"; //you can also try "GET OUT" (then it wont land, only hovers)
-while { (getPos _heli) select 2 > 3 } do { sleep 2; };
+while { (getPos _heli) select 2 > 7 } do { sleep 2; };
+_heli setFuel 0;
 
 if((_smoke select 1))then{//Cover smoke
 	[_targetPos,_heli] spawn {
@@ -270,6 +286,7 @@ if((_smoke select 1))then{//Cover smoke
 			_smoke1 = "SmokeShell" createVehicle _sPos;
 			_a = _a + 1;
 			_dir = _dir + (360 / 16);
+			sleep 0.001;
 		};
 	};
 };
@@ -292,6 +309,7 @@ if((_smoke select 3))then{//Chemlights
 			_smoke1 = "Chemlight_red" createVehicle _sPos;
 			_a = _a + 1;
 			_dir = _dir + (360 / 8);
+			sleep 0.001;
 		};
 	};
 };
@@ -299,21 +317,21 @@ if((_smoke select 3))then{//Chemlights
 while { (getPos _heli) select 2 > 1 } do { sleep 1; };
 
 if(_captive)then{
-	{ _x setCaptive false; }forEach units _grp1;
-	{ _x setCaptive false; }forEach units _grp2;
+	{ _x setCaptive false;sleep 0.001; }forEach units _grp1;
+	{ _x setCaptive false;sleep 0.001; }forEach units _grp2;
 };
 
 _grp2 leaveVehicle _heli;
 {
 	unassignVehicle _x;
-	doGetOut _x; 
+	doGetOut _x;
 	_x setBehaviour "AWARE";
 } forEach units _grp2;
 _grp2 setCombatMode "RED";
 while { (count (crew _heli)) > 1 } do { sleep 2;  };
 _heli doMove _pos;
 
-
+if(alive _heli)then{_heli setFuel 1;};
 
 if(_patrol)then{
 	if(typeName _targetMarker == "ARRAY")then{ //TARGET is array
@@ -324,11 +342,12 @@ if(_patrol)then{
 						_cPosition = _targetMarker select 1;
 						_cRadius = _targetMarker select 2;
 						nul = [_x,_cPosition,_cRadius,_doorHandling] execVM "LV\patrol-vD.sqf";
+						sleep 0.001;
 					}forEach units _grp2;
 				};
 			};
 		}else{ //TARGET is array of Markers or Groups
-			{ 
+			{
 				_x setVariable ["target0",_targetMarker,false];
 				_x setVariable ["mDis0", 1000, false];
 				if(_cycle)then{
@@ -352,7 +371,7 @@ if(_patrol)then{
 	};
 }else{
 	//If patrol is set to false, units will idle. Additionally you can set custom actions here:
-	
+
 };
 
 while { (_heli distance _pos > 200) } do { sleep 4; };
@@ -363,6 +382,7 @@ if((_heli distance _pos < 200))exitWith{
 	deleteVehicle _man;
 	deleteVehicle _heli;
 	waituntil {sleep 1;(count units _grp1)==0};
-    	deletegroup _grp1; 
+    deletegroup _grp1;
 };
 
+//};

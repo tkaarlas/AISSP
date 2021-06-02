@@ -19,7 +19,7 @@ _num = 0;
 _scolons = 0;
 _commandms = [];
 for [{_i=1}, {_i<(count _array0)}, {_i=_i+1}] do{
-	if(((_array0 select _i) == 116)&&((count _array0)>(_i+3)))then{ 
+	if(((_array0 select _i) == 116)&&((count _array0)>(_i+3)))then{
 	   if((_i > 0)&&((_array0 select (_i-1)) == 95))then{
 	     _commandms set[(count _commandms), (_array0 select _i)];
 	   }else{
@@ -27,15 +27,17 @@ for [{_i=1}, {_i<(count _array0)}, {_i=_i+1}] do{
 			if(!_globalUnit)then{
 				while{!(isNil("LVVIUID"+(str _num)))}do{
 					_num = _num + 1;
+					sleep 0.001;
 				};
 				call compile format ["LVVIUID%1 = _unit",_num];
 			};
-			
+
 			_unArr = toArray("LVVIUID"+(str _num));
 			_a = 0;
 			while {_a < (count _unArr) }do{
 				_commandms set[(count _commandms), (_unArr select _a)];
 				_a = _a + 1;
+				sleep 0.001;
 			};
 			_globalUnit = true;
 			_i = _i + 3;
@@ -46,7 +48,7 @@ for [{_i=1}, {_i<(count _array0)}, {_i=_i+1}] do{
 	}else{
 		_commandms set[(count _commandms), (_array0 select _i)];
 	};
-	
+
     if((_array0 select _i) == 59)then{
 		_scolons = _scolons + 1;
 		[toString(_commandms)] call {
@@ -56,6 +58,8 @@ for [{_i=1}, {_i<(count _array0)}, {_i=_i+1}] do{
 		};
 		_commandms = [];
 	};
+
+	sleep 0.001;
 };
 
 if(_globalUnit)then{

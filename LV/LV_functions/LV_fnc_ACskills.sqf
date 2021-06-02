@@ -21,4 +21,6 @@ if(typeName _skills == "SCALAR")then{
     _x setSkill ["general",(_skillArray select 7)];
 	_x setSkill ["endurance",(_skillArray select 8)];
 	_x setSkill ["reloadspeed",(_skillArray select 9)];
+
+	sleep 0.001;
 }forEach units group _group;

@@ -15,8 +15,8 @@ _syncedUnit = _this select 2;
 _range = _this select 3;
 _fleeDir = _this select 4;
 
-LV_deleteOnDestination = compile preprocessFile "LV\LV_functions\LV_fnc_deleteOnDestination.sqf";
-LV_killAfterDelay = compile preprocessFile "LV\LV_functions\LV_fnc_killAfterDelay.sqf";
+LV_deleteOnDestination = compileFinal preprocessFile "LV\LV_functions\LV_fnc_deleteOnDestination.sqf";
+LV_killAfterDelay = compileFinal preprocessFile "LV\LV_functions\LV_fnc_killAfterDelay.sqf";
 
 if(!(isNil("ACpatrol")))then{terminate ACpatrol;};
 if(!(isNil("ACcleanUp")))then{terminate ACcleanUp;};
@@ -36,25 +36,25 @@ while{_i < (count LV_ACS_activeGroups)}do{
 			case (1):{
 				if(isNil("_fleeDir"))then{
 					_dir = (((getPos _unit) select 0) - ((getPos _syncedUnit) select 0)) atan2 (((getPos _unit) select 1) - ((getPos _syncedUnit) select 1));
-					if(_dir < 0) then {_dir = _dir + 360;}; 
+					if(_dir < 0) then {_dir = _dir + 360;};
 					_nPos = [((getPos _syncedUnit) select 0) + (sin _dir) * (_range+200), ((getPos _syncedUnit) select 1) + (cos _dir) * (_range+200), 0];
 				}else{
 					_dir = _fleeDir;
 					_nPos = [((getPos _unit) select 0) + (sin _dir) * (_range+200), ((getPos _unit) select 1) + (cos _dir) * (_range+200), 0];
 				};
-				
-				
-				
+
+
+
 				if(surfaceIsWater _nPos)then{
 					_disPAI = _nPos distance _syncedUnit;
 					if(_disPAI < 600)then{_disPAI = 600;};
 					_nPos = _nPos findEmptyPosition[1, _disPAI];
 				};
-				 
-				
+
+
 				_unit doMove _nPos;
 				_unit setBehaviour "CARELESS";
-				
+
 				//_markerstr = createMarker[("markername"+(str _unit)),_nPos];
 				//_markerstr setMarkerShape "ICON";
 				//("markername"+(str _unit)) setMarkerType "mil_dot";
@@ -65,9 +65,10 @@ while{_i < (count LV_ACS_activeGroups)}do{
 				[_unit, _range] spawn LV_killAfterDelay;
 			};
 		};
-		
+		sleep 0.001;
 	}forEach units _grp;
 	LV_ACS_activeGroups = LV_ACS_activeGroups - [_grp];
+	sleep 0.001;
 };
 
 //hint "end";

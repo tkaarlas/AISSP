@@ -1,5 +1,5 @@
 //ARMA3Alpha function LV_fnc_follow v1.2 - by SPUn / lostvar
-//Makes unit follow its target(s), which is set elsewhere (unit setVariable ["target0", target, false];) 
+//Makes unit follow its target(s), which is set elsewhere (unit setVariable ["target0", target, false];)
 //Syntax: nul = [this,cycle] execVM "LV\LV_functions\LV_fnc_follow.sqf"; (on units init)
 //*cycle = true or false (IF target0 is array of markers then true will make unit cycle those markers) DEFAULT: false
 private ["_cycle","_unit","_target","_i2","_targetM","_dir","_nearTarget","_maxDistance","_g0","_tTarget","_groupArr","_ttE"];
@@ -22,7 +22,7 @@ _groupArr = [];
 if(((typeName _target) == "ARRAY"))then{
 _ttE = _target select 0;
 if(_ttE in allMapMarkers)then{
-	if(_cycle)then{ 
+	if(_cycle)then{
 	//hint "Target is MARKER ARRAY, CYCLE is ON";
 		while{alive _unit}do{
 			_i2 = 0;
@@ -32,7 +32,9 @@ if(_ttE in allMapMarkers)then{
 				_unit doMove (getMarkerPos _targetM);
 				while { ((alive _unit)&&((_unit distance (getMarkerPos _targetM)) > 10))||(!unitReady _unit) } do { sleep 10; };
 				_i2 = _i2 + 1;
+				sleep 0.001;
 			};
+			sleep 0.001;
 		};
 	}else{
 	//hint "Target is MARKER ARRAY, CYCLE is OFF";
@@ -43,6 +45,7 @@ if(_ttE in allMapMarkers)then{
 			_unit doMove (getMarkerPos _targetM);
 			while { ((alive _unit)&&((_unit distance (getMarkerPos _targetM)) > 10))||(!unitReady _unit) } do { sleep 10; };
 			_i2 = _i2 + 1;
+			sleep 0.001;
 		};
 	};
 	}else{
@@ -50,16 +53,18 @@ if(_ttE in allMapMarkers)then{
 			//hint "Target is GROUP ARRAY";
 			_g0 = 0;
 			while{_g0 < count _target}do{
-				{ _groupArr set[(count _groupArr), _x] } forEach units (_target select _g0);
+				{ _groupArr set[(count _groupArr), _x]; sleep 0.001; } forEach units (_target select _g0);
 				_g0 = _g0 + 1;
+				sleep 0.001;
 			};
-				
+
 			while{true}do{
-				_tTarget = _groupArr select floor(random(count _groupArr));
+				_tTarget = selectRandom _groupArr;
 				{
 					if((_x distance _unit) < (_tTarget distance _unit))then{
 						_tTarget = _x;
-					};	
+					};
+					sleep 0.001;
 				}forEach _groupArr;
 				if((_tTarget distance _unit) < _maxDistance)then{
 					if(side _unit == side _tTarget)then{
@@ -81,15 +86,16 @@ if(_ttE in allMapMarkers)then{
 	if(((typeName _target) == "GROUP"))then{
 		//hint "Target is single GROUP";
 		if((typeName _target) == "GROUP")then{ //if target is single group
-			{ _groupArr set[(count _groupArr), _x] } forEach units _target;
-		};	
-	
+			{ _groupArr set[(count _groupArr), _x]; sleep 0.001; } forEach units _target;
+		};
+
 		while{true}do{
-			_tTarget = _groupArr select floor(random(count _groupArr));
+			_tTarget = selectRandom _groupArr;
 			{
 				if((_x distance _unit) < (_tTarget distance _unit))then{
 					_tTarget = _x;
-				};	
+				};
+				sleep 0.001;
 			}forEach _groupArr;
 			if((_tTarget distance _unit) < _maxDistance)then{
 				if(side _unit == side _tTarget)then{
@@ -100,14 +106,14 @@ if(_ttE in allMapMarkers)then{
 					_unit doMove (getPos _tTarget);
 				};
 			}else{
-				//hint "Target too far, AI idling";
+				hint "Target too far, AI idling";
 			};
 			sleep 10;
 		};
-			
-	}else{ 
+
+	}else{
 	//hint "Target is single UNIT";
-		while {true} do { 
+		while {true} do {
 			if(!alive _target)then{waitUntil{sleep 1; alive _target};};
 			if(side _unit == side _target)then{
 				_dir = random 360;
@@ -116,7 +122,7 @@ if(_ttE in allMapMarkers)then{
 			}else{
 				_unit doMove (getPos _target);
 			};
-			sleep 10; 
+			sleep 10;
 		};
 	};
 };

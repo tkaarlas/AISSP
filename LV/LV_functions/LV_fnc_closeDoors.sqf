@@ -22,7 +22,7 @@ if(isNil("_runningAlready"))then{//and if not, then mark it up as started
 	_doorPositions = [];
 	_bdCfg = (configFile >> "cfgVehicles" >> (typeOf _building) >> "UserActions"); //get config for doors
 	if ((count _bdCfg) <= 0) exitwith {}; //if none, exit
-	
+
 	for "_i" from 0 to ((count _bdCfg) - 1) step 3 do{ //gather doop positions from the config data:
 		if (_i >= (count _bdCfg)) exitwith {};
 		_sel = _bdCfg select _i;
@@ -38,7 +38,7 @@ if(isNil("_runningAlready"))then{//and if not, then mark it up as started
 while{(_unit in _inUnits)}do{ //run as long as there's AI's inside (count _inUnits)>0
 	_doors = [];
 	_doorPositions = (_building getVariable "DoorPositions");
-	waitUntil{_doorPositions = (_building getVariable "DoorPositions");(!isNil("_doorPositions"));};
+	waitUntil{sleep 0.016;_doorPositions = (_building getVariable "DoorPositions");(!isNil("_doorPositions"));};
 	_avoidDoors = (_building getVariable "AvoidDoors"); //door aims which player MAY HAVE caused, are stored in this
 	if(isNil("_avoidDoors"))then{_avoidDoors = [];};
 	for "_i" from 1 to (count _doorPositions) step 1 do { //save the anim numbers and phase values in data array +add positions along
@@ -47,10 +47,11 @@ while{(_unit in _inUnits)}do{ //run as long as there's AI's inside (count _inUni
 		}else{
 			_doors set[(count _doors),[_i,0,(_doorPositions select (_i - 1))]];
 		};
+		sleep 0.001;
 	};
 	sleep 0.2;
-	_bDoors = (_building getVariable "Doors"); 
-//hint format["%1",_bDoors];
+	_bDoors = (_building getVariable "Doors");
+	//hint format["%1",_bDoors];
 	if(isNil("_bDoors"))then{ //if animation phase values has not been saved already,
 		_building setVariable ["Doors", _doors, false]; //save them in building so we can compare them on next loop
 	}else{ //now we have the phase values and we can observe if they change:
@@ -64,18 +65,19 @@ while{(_unit in _inUnits)}do{ //run as long as there's AI's inside (count _inUni
 					_goodToClose = true;
 					{ //check if player is <3m away from the opened door and if so, skip the door closing
 						if((_x distance ((_doors select (_n - 1)) select 2))<3)then{_goodToClose = false;};
+						sleep 0.001;
 					}forEach _players;
-					
+
 					//also skip if current unit is over 3m far from current door
 					if((_unit distance ((_doors select (_n - 1)) select 2))>3)then{_goodToClose = false;};
-					
+
 					if(_goodToClose)then{ //if door is still in avoid-array, but good to go, remove it from the array
 						if(_n in _avoidDoors)then{
 							_avoidDoors = _avoidDoors - [_n];
 							_building setVariable ["AvoidDoors", _avoidDoors, false];
 						};
 					};
-					
+
 					if(_goodToClose)then{
 						if(!(_n in _avoidDoors))then{ //if anim is not possibly player-caused -> invert animation:
 							[_unit,_building,_doors,_n,_v] spawn {
@@ -85,7 +87,7 @@ while{(_unit in _inUnits)}do{ //run as long as there's AI's inside (count _inUni
 								_doors = _this select 2;
 								_n = _this select 3;
 								_v = _this select 4;
-								waitUntil{((_unit distance ((_doors select (_n - 1)) select 2))>2)}; //wait till AI has passed door
+								waitUntil{sleep 0.011;((_unit distance ((_doors select (_n - 1)) select 2))>2)}; //wait till AI has passed door
 								_building animate ["door_" + str _n + "_rot",0]; //_v
 							};
 						};
@@ -103,6 +105,7 @@ while{(_unit in _inUnits)}do{ //run as long as there's AI's inside (count _inUni
 								_stillNear = false;
 								{
 									if((_x distance _building)<100)then{_stillNear = true;};
+									sleep 0.001;
 								}forEach _players;
 								sleep 2;
 							};
@@ -110,6 +113,7 @@ while{(_unit in _inUnits)}do{ //run as long as there's AI's inside (count _inUni
 						};
 					};
 			};
+			sleep 0.001;
 		}forEach _bDoors;
 
 	};

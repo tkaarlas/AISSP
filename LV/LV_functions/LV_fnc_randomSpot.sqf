@@ -10,7 +10,7 @@ if(count _this > 2)then{
 	_range = (random(_this select 1));
 };
 
-_avoid = if (count _this > 3) then { _this select 3;} else {nil};	
+_avoid = if (count _this > 3) then { _this select 3;} else {nil};
 
 if(isNil("_avoid"))then{
 	_dir = random 360;
@@ -23,6 +23,7 @@ if(isNil("_avoid"))then{
 		_newSpot = [(_startSpot select 0) + (sin _dir) * _range, (_startSpot select 1) + (cos _dir) * _range, 0];
 		{
 			if((_x distance _newSpot) <= 200)then{_spotValid = false;};
+			sleep 0.001;
 		}forEach _avoid;
 		if(surfaceIsWater _newSpot)then{_spotValid = false;};
 		sleep 1;

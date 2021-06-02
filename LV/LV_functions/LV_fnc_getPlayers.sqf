@@ -10,7 +10,8 @@ while{(count _players) == 0}do{
         _players set[(count _players), _x];
       };
     };
+    sleep 0.001;
   }forEach _all;
-sleep 3;
+  sleep 3;
 };
 _players

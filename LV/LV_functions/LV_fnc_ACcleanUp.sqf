@@ -1,10 +1,10 @@
-//ARMA3Alpha function LV_fnc_ACcleanUp v1.1 - by SPUn / lostvar
+//ARMA3Alpha function LV_fnc_ACcleanUp v2.1 - by SPUn / Kaarto Media
 //removes dead groups and groups in defined distance
 private ["_sUnit","_nearestUnit","_nsUnit","_wGroup","_leader","_uns","_i","_maxDis","_mp"];
-_sUnit = _this select 0;
-_maxDis = _this select 1;
-_mp = _this select 2;
-if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compile preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
+_sUnit = param [0];
+_maxDis = param [1];
+_mp = param[2,false];
+if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compileFinal preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
 
 while{true}do{
 	_i = 0;
@@ -12,8 +12,7 @@ while{true}do{
 		_wGroup = LV_ACS_activeGroups select _i;
 		_leader = leader _wGroup;
 		_uns = { alive _x } count units _wGroup;
-		
-		
+
 		if(((typeName _sUnit) == "ARRAY")||(_mp))then{
 			if(_mp)then{ _sUnit = call LV_GetPlayers;};
 			if((count _sUnit)>1)then{
@@ -22,17 +21,18 @@ while{true}do{
 				  if((_x distance _leader)<(_nearestUnit distance _leader))then{
 					_nearestUnit = _x;
 				  };
+				  sleep 0.001;
 				}forEach _sUnit;
 				_nsUnit = _nearestUnit;
 			}else{
 				_nsUnit = _sUnit select 0;
-			};	
+			};
 		}else{
 			_nsUnit = _sUnit;
-		};		
-		
-		
+		};
+
 		if(_uns < 1)then{
+
 			LV_ACS_activeGroups = LV_ACS_activeGroups - [_wGroup];
 			switch(side _wGroup)do{
 				case west:{
@@ -45,6 +45,7 @@ while{true}do{
 					LV_AI_indeGroups = LV_AI_indeGroups - [_wGroup];
 				};
 			};
+
 		}else{
 			if((_leader distance _nsUnit) > _maxDis)then{
 				LV_ACS_activeGroups = LV_ACS_activeGroups - [_wGroup];
@@ -59,7 +60,8 @@ while{true}do{
 						LV_AI_indeGroups = LV_AI_indeGroups - [_wGroup];
 					};
 				};
-				{ deleteVehicle _x }forEach units _wGroup;
+				{ deleteVehicle _x; sleep 0.001; }forEach units _wGroup;
+				deleteGroup _wGroup;
 			};
 		};
 		sleep 1;

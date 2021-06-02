@@ -19,10 +19,14 @@ if(_center in allMapMarkers)then{
 
 switch (_type) do {
 	case "all in radius":{
-		_houseObjects = nearestObjects [_center0, ["building"], _radius];
+		_houseObjects = nearestObjects [_center0, ["House","Building"], _radius];
+		if(isNil("_houseObjects") || (count _houseObjects)<1)then{ _houseObjects = _center0 nearObjects ["Building", _radius]};
+		if(isNil("_houseObjects") || (count _houseObjects)<1)then{ _houseObjects = _center0 nearObjects ["House", _radius]};
 	};
 	case "nearest one":{
-		_houseObjects = nearestObjects [_center0, ["building"], 500];
+		_houseObjects = nearestObjects [_center0, ["House","building"], 500];
+		if(isNil("_houseObjects") || (count _houseObjects)<1)then{ _houseObjects = _center0 nearObjects ["Building", 500]};
+		if(isNil("_houseObjects") || (count _houseObjects)<1)then{ _houseObjects = _center0 nearObjects ["House", 500]};
 	};
 };
 
@@ -32,6 +36,7 @@ if((count _houseObjects)==0)exitWith{nil};
 _buildings = [];
 {
 	if(str(_x buildingPos 0) != "[0,0,0]")then{_buildings set[(count _buildings),_x];};
+	sleep 0.001;
 }forEach _houseObjects;
 
 if((count _buildings)==0)exitWith{nil};
@@ -44,6 +49,7 @@ switch (_type) do {
 		_bld = _buildings select 0;
 		{
 			if((_x distance _center)<(_bld distance _center))then{ _bld = _x; };
+			sleep 0.001;
 		}forEach _buildings;
 		_buildings = [_bld];
 		_buildings;

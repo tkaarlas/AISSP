@@ -3,15 +3,15 @@
 		This script caches fillHouse & militarize scripts.
 
 	nul = [[ID's],[players],distance,keep count,MP] execVM "LV\LV_functions\LV_fnc_simpleCache.sqf";
-	
+
 	ID's		=	array of script ID's
 	players 	=	array of players (doesnt matter what you set here if you use MP mode)
 	distance	=	distance between player(s) and militarize/fillHouse on where scripts will be activated
 	keep count	=	true = script will count & save AI amounts, false = AI amount will be reseted on each time it activates again
 	MP			=	true = all alive non-captive playableUnits will activate scripts, false = only units in players-array
-	
+
 	example:
-	
+
 	nul = [[13,14],[playerUnit1],500,true,false] execVM "LV\LV_functions\LV_fnc_simpleCache.sqf";
 
 */
@@ -28,23 +28,23 @@ _distance = _this select 2;
 _keepCount = _this select 3;
 _mp = _this select 4;
 
-if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compile preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
+if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compileFinal preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
 
 while{true}do{
 	for[{_i=0}, {_i<(count _ids)}, {_i=_i+1}] do{
-		
+
 		waitUntil{sleep 1;(!isNil("LVgroup"+(str (_ids select _i))))}; //wait til group exists
 		call compile format["_grp = LVgroup%1;",(str (_ids select _i))]; //get group
 		waitUntil{sleep 1;(!isNil("LVgroup"+(str (_ids select _i))+"CI"))};
 		call compile format["_scriptParams = LVgroup%1CI",(str (_ids select _i))]; //get arguments
 		while{isNil("_scriptParams")}do{sleep 2;call compile format["_scriptParams = LVgroup%1CI",(str (_ids select _i))];};
-		
+
 		_id = _ids select _i;
 		_script = _scriptParams select 0;
 		_params = _scriptParams select 1;
 
 		_center = _params select 0;
-	
+
 		_inRange = false;
 		if(_center in allMapMarkers)then{
 			_cPos = getMarkerPos _center;
@@ -62,8 +62,9 @@ while{true}do{
 				_inRange = true;
 				_inRangeUnits set[(count _inRangeUnits),_x];
 			};
+			sleep 0.001;
 		}forEach _units;
-		
+
 		if(_excludeSingleHeliPilot)then{
 			if((count _inRangeUnits) == 1)then{
 				_pilotCandidate = (_inRangeUnits select 0);
@@ -74,10 +75,10 @@ while{true}do{
 				};
 			};
 		};
-		
+
 		if((isNil("LVgroup"+(str (_ids select _i))+"spawned"))&&(_inRange))then{
 			//hint format ["CREATING: LVgroup%1",_id];
-			if(_script == "militarize")then{ 
+			if(_script == "militarize")then{
 				call compile format["nul = %1 execVM 'LV\militarize.sqf';",_params];
 			}else{
 				call compile format["nul = %1 execVM 'LV\fillHouse.sqf';",_params];
@@ -88,21 +89,27 @@ while{true}do{
 				if(_keepCount)then{
 					_aliveCount = ({alive _x} count units _grp);
 					//hint format ["DELETING: LVgroup%1 \n SAVED SIZE: %2",_id,_aliveCount];
+
 					_amountArr = [_aliveCount,0];
 					if(_script == "militarize")then{
 						_vehicleAmount = 0;
 						_tempVehs = [];
 						{
 							if(vehicle _x != _x)then{
-								if(vehicle _x !in _tempVehs){
+								_aliveCount = _aliveCount - 1;
+								if(!(vehicle _x in _tempVehs))then{
 									if((canMove (vehicle _x))&&(alive _x))then{
-										_vehicleAmount = _vehicleAmount + 1; 
-										_aliveCount = _aliveCount - 1;
+										_vehicleAmount = _vehicleAmount + 1;
+										//_aliveCount = _aliveCount - 1;
 										_tempVehs set[(count _tempVehs),(vehicle _x)];
 									};
 								};
 							};
+							sleep 0.001;
 						}forEach units _grp;
+						private "_origA";
+						call compile format["_origA = (((LVgroup%1CI select 1) select 6) select 0);",_id];
+						if(_aliveCount > _origA)then{_aliveCount = _origA;};
 						_amountArr = [_aliveCount,0];
 						call compile format["(LVgroup%1CI select 1) set [6, %2];",_id,_amountArr];
 						if(_vehicleAmount > 0)then{
@@ -116,6 +123,7 @@ while{true}do{
 					{
 						if(vehicle _x != _x)then{deleteVehicle (vehicle _x);};
 						deleteVehicle _x;
+						sleep 0.001;
 					}forEach units _grp;
 					call compile format["LVgroup%1spawned = nil;", (_ids select _i)];
 				if(_keepCount)then{ //REMOVE this sentence if you want script to be terminated once all units have been killed
@@ -125,7 +133,7 @@ while{true}do{
 				};
 			};
 		};
-	
+
 	};
 	sleep 2;
 };

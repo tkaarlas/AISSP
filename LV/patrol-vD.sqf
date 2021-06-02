@@ -1,4 +1,4 @@
-///////Simple Patrol script vD 1.9 - SPUn / LostVar
+///////Simple Patrol script vD 2.0 - SPUn / Kaarto Media
 //
 //*infantry units patrols independently around starting position in defined radius and also checks randomly buildings
 //*Syntax: nul = [this] execVM "LV\patrol-vD.sqf";
@@ -8,8 +8,8 @@
 //*handle doors: true = units will close doors behind them
 
 private ["_buildings","_wp1","_unit","_startingPos","_pDir","_pRange","_newPos","_buildingVisits","_justDidBuilding","_i","_i2","_bPoss","_chooseBuildingOrNot","_building","_center","_radius","_buildingVisitMax","_buildingDistanceLimit"];
-if(isNil("LV_CloseDoors"))then{LV_CloseDoors = compile preprocessFile "LV\LV_functions\LV_fnc_closeDoors.sqf";};
-if(isNil("LV_nearestBuilding"))then{LV_nearestBuilding = compile preprocessFile "LV\LV_functions\LV_fnc_nearestBuilding.sqf";};
+if(isNil("LV_CloseDoors"))then{LV_CloseDoors = compileFinal preprocessFile "LV\LV_functions\LV_fnc_closeDoors.sqf";};
+if(isNil("LV_nearestBuilding"))then{LV_nearestBuilding = compileFinal preprocessFile "LV\LV_functions\LV_fnc_nearestBuilding.sqf";};
 _unit = _this select 0;
 _cPos = _this select 1;
 _radius = _this select 2;
@@ -48,17 +48,18 @@ while { alive _unit }do{
 	if(surfaceIsWater _newPos)then{
 			private["_randomWay","_dir"];
 			_dir = (((_center) select 0) - (_newPos select 0)) atan2 (((_center) select 1) - (_newPos select 1));
-			_randomWay = floor(random 2); 
+			_randomWay = floor(random 2);
 			while{surfaceIsWater _newPos}do{
 				if(_randomWay == 0)then{_dir = _dir + 20;}else{_dir = _dir - 20;};
-				if(_dir < 0) then {_dir = _dir + 360;}; 
+				if(_dir < 0) then {_dir = _dir + 360;};
 				_newPos = [(_center select 0) + (sin _dir) * _pRange, (_center select 1) + (cos _dir) * _pRange, 0];
+				sleep 0.001;
 			};
 	};
-    	waitUntil {unitReady _unit || _unit distance _newPos < 2};
+    	waitUntil {sleep 0.031;(unitReady _unit || _unit distance _newPos < 2) && behaviour _unit != "COMBAT"};
     	_unit doMove _newPos;
-    	waitUntil {unitReady _unit || _unit distance _newPos < 2};
-	
+    	waitUntil {sleep 0.030;(unitReady _unit || _unit distance _newPos < 2) && behaviour _unit != "COMBAT"};
+
 	if(_buildingVisits < _buildingVisitMax)then{
 		_buildingVisits = _buildingVisits + 1;
 	}else{
@@ -71,7 +72,7 @@ while { alive _unit }do{
 		while{true}do{
 			if(isNil("_buildings"))exitWith{_justDidBuilding = true;};
 			if(count _buildings == 0)exitWith{_justDidBuilding = true;};
-			_building = _buildings select 0; 
+			_building = _buildings select 0;
 			if((_unit distance _building) < _buildingDistanceLimit)then{
 				_chooseBuildingOrNot = round(random 3);
 				if(_chooseBuildingOrNot < 4)then{ //2
@@ -80,6 +81,7 @@ while { alive _unit }do{
 					while { ((_building buildingPos _i) select 0) != 0 } do {
 						_bPoss set [count (_bPoss), (_building buildingPos _i)];
 						_i = _i + 1;
+						sleep 0.001;
 					};
 					//hint format["%1",(count _bPoss)];
 					_i2 = 0;
@@ -88,11 +90,12 @@ while { alive _unit }do{
 						while{_i2 < (count _bPoss)}do{
 							_newPos = (floor(random(count _bPoss)));
 							_newPos = _bPoss select _newPos;
-							waitUntil {unitReady _unit || _unit distance _newPos < 2};
-							_unit doMove _newPos;						
-							waitUntil {unitReady _unit || _unit distance _newPos < 2};;
+							waitUntil {sleep 0.016;(unitReady _unit || _unit distance _newPos < 2) && behaviour _unit != "COMBAT"};
+							_unit doMove _newPos;
+							waitUntil {sleep 0.021;(unitReady _unit || _unit distance _newPos < 2) && behaviour _unit != "COMBAT"};
 							sleep 5 + random 25;
 							_i2 = _i2 + 1;
+							sleep 0.001;
 						};
 					_justDidBuilding = true;
 					if(_handleDoors)then{
@@ -111,6 +114,8 @@ while { alive _unit }do{
 			if(true)exitWith{};
 		};
 	};
+	_break = _unit getVariable "breakPatrol";
+	if(!isNil("_break"))exitWith{};
     sleep 1 + random 59;
+	if(!isNil("_break"))exitWith{};
 };
-

@@ -1,0 +1,4 @@
+class aissp_configs
+{
+	#include "LV\config_aissp.hpp"
+};

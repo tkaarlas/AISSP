@@ -1,21 +1,19 @@
-//ARMA3Alpha function LV_fnc_menGroup v1.3 - by SPUn / lostvar
-//Spawn infantry group and returns leader
-private ["_BLUmen3","_OPFarrays","_BLUarrays","_INDgrp","_INDhq","_INDmen","_OPFmen2","_BLUmen2","_pos","_side","_size","_BLUmen","_OPFmen","_men","_amount","_BLUhq","_BLUgrp","_OPFhq","_OPFgrp","_grp","_i","_man1","_man","_leader"];
-_pos = _this select 0;
-_side = _this select 1;
-_size = _this select 2;
-_grpId = if (count _this > 3) then { _this select 3;} else {nil};	
+//ARMA3Alpha function LV_fnc_menGroup v2.0 - by SPUn / Kaarto Media
+//Spawn infantry group and returns its leader
+private ["_hq","_pos","_side","_size","_men","_amount","_grp","_i","_man1","_man","_leader","_classModuleFilters","_syncedUnit","_dissapearDistance","_clean"];
+_pos = param [0,[0,0,0]];
+_side = param [1,0];
+_size = param [2,6];
+_grpId = param [3,nil];
+_classModuleFilters = param [4,["ALL"]];
+_syncedUnit = param [5,nil];
+_dissapearDistance = param [6,nil];
+_clean = param [7,false];
 
-_BLUmen = ["B_Soldier_A_F","B_soldier_AR_F","B_medic_F","B_engineer_F","B_soldier_exp_F","B_Soldier_GL_F","B_soldier_M_F","B_soldier_AA_F","B_soldier_AT_F","B_officer_F","B_soldier_repair_F","B_Soldier_F","B_soldier_LAT_F","B_Soldier_lite_F","B_Soldier_SL_F","B_Soldier_TL_F","B_soldier_AAR_F","B_soldier_AAA_F","B_soldier_AAT_F"];
-_BLUmen2 = ["B_recon_exp_F","B_recon_JTAC_F","B_recon_M_F","B_recon_medic_F","B_recon_F","B_recon_LAT_F","B_recon_TL_F","B_soldier_AAR_F","B_soldier_AAA_F","B_soldier_AAT_F"];
-_BLUmen3 = ["B_G_Soldier_A_F","B_G_soldier_AR_F","B_G_medic_F","B_G_engineer_F","B_G_soldier_exp_F","B_G_Soldier_GL_F","B_G_soldier_M_F","B_G_officer_F","B_G_Soldier_F","B_G_soldier_LAT_F","B_G_Soldier_lite_F","B_G_Soldier_SL_F","B_G_Soldier_TL_F"];
-_BLUarrays = [_BLUmen,_BLUmen2,_BLUmen3];
-_OPFmen = ["O_Soldier_A_F","O_soldier_AR_F","O_medic_F","O_engineer_F","O_soldier_exp_F","O_Soldier_GL_F","O_soldier_M_F","O_soldier_AA_F","O_soldier_AT_F","O_officer_F","O_soldier_repair_F","O_Soldier_F","O_soldier_LAT_F","O_Soldier_lite_F","O_Soldier_SL_F","O_Soldier_TL_F","O_soldier_AAR_F","O_soldier_AAA_F","O_soldier_AAT_F"];
-_OPFmen2 = ["O_recon_exp_F","O_recon_JTAC_F","O_recon_M_F","O_recon_medic_F","O_recon_F","O_recon_LAT_F","O_recon_TL_F","O_soldier_AAR_F","O_soldier_AAA_F","O_soldier_AAT_F"];
-_OPFarrays = [_OPFmen,_OPFmen2];
-_INDmen = ["I_Soldier_A_F","I_soldier_AR_F","I_medic_F","I_engineer_F","I_soldier_exp_F","I_Soldier_GL_F","I_soldier_M_F","I_soldier_AA_F","I_soldier_AT_F","I_officer_F","I_soldier_repair_F","I_Soldier_F","I_soldier_LAT_F","I_Soldier_lite_F","I_Soldier_SL_F","I_Soldier_TL_F","I_soldier_AAR_F","I_soldier_AAA_F","I_soldier_AAT_F"];
+if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
 
 _men = [];
+
 if(typeName _size == "ARRAY")then{
 	_amount = ((random (_size select 0)) + (_size select 1));
 }else{
@@ -24,29 +22,38 @@ if(typeName _size == "ARRAY")then{
 
 switch(_side)do{
 	case 0:{
-		_men = (_BLUarrays call BIS_fnc_selectRandom);
-		_BLUhq = createCenter west;
-		_BLUgrp = createGroup west;
-		_grp = _BLUgrp;
+		_hq = [1] call LV_centerInit;
+		_grp = createGroup west;
 	};
 	case 1:{
-		_men = (_OPFarrays call BIS_fnc_selectRandom);
-		_OPFhq = createCenter east;
-		_OPFgrp = createGroup east;
-		_grp = _OPFgrp;
+		_hq = [2] call LV_centerInit;
+		_grp = createGroup east;
 	};
 	case 2:{
-		_men = _INDmen;
-		_INDhq = createCenter resistance;
-		_INDgrp = createGroup resistance;
-		_grp = _INDgrp;
+		_hq = [3] call LV_centerInit;
+		_grp = createGroup resistance;
 	};
 };
 
-_i = 0; 
+_men = ([_classModuleFilters,[(_side + 1), 6]] call LV_classnames);
+
+_men = [_men] call LV_validateClassArrays;
+if((count _men) == 0)then{
+	_men = ([[],[(_side + 1), 6]] call LV_classnames);
+};
+
+_men = selectRandom _men;
+
+_i = 0;
 for "_i" from 0 to _amount do {
-	_man1 = _men select (floor(random(count _men)));
+	_man1 = selectRandom _men;
 	_man = _grp createUnit [_man1, _pos, [], 0, "NONE"];
+	if(_clean)then{
+		_man setVariable ["syncedUnit",_syncedUnit,false];
+		_man setVariable ["dissapearDistance",_dissapearDistance,false];
+		_man addEventHandler ["killed", {_this execVM "LV\LV_functions\LV_fnc_ACAIkilled.sqf"}];
+	};
+	sleep 0.3;
 };
 
 if(!isNil("_grpId"))then{

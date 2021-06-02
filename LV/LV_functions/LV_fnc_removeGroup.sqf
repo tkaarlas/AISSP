@@ -1,5 +1,5 @@
 //ARMA3Alpha function LV_fnc_removeGroup v0.2 - by SPUn / lostvar
-//removes fillHouse or militarize units 
+//removes fillHouse or militarize units
 //Syntax: nul = [LVgroup*] execVM "LV\LV_functions\LV_fnc_removeGroup.sqf";
 // * = id number (which is defined in fillHouse or militarize, so if ID is 10 = LVgroup10)
 private["_grp"];
@@ -9,4 +9,5 @@ if(isNil("_grp"))exitWith{};
 {
 	if(vehicle _x != _x)then{deleteVehicle (vehicle _x);};
 	deleteVehicle _x;
+	sleep 0.001;
 }forEach units _grp;

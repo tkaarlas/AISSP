@@ -1,16 +1,19 @@
-//ARMA3Alpha function LV_fnc_diveGroup v1.1 - by SPUn / lostvar (included by FX2K)
-//Spawn infantry group and returns leader
-private ["_OPFarrays","_BLUarrays","_INDgrp","_INDhq","_INDmen","_OPFmen2","_BLUmen2","_pos","_side","_size","_BLUmen","_OPFmen","_men","_amount","_BLUhq","_BLUgrp","_OPFhq","_OPFgrp","_grp","_i","_man1","_man","_leader"];
-_pos = _this select 0;
-_side = _this select 1;
-_size = _this select 2;
-_grpId = if (count _this > 3) then { _this select 3;} else {nil};	
+//ARMA3Alpha function LV_fnc_diveGroup v2.0 - by SPUn / Kaarto Media (included by FX2K)
+//Spawns infantry group and returns its leader
+private ["_hq","_pos","_side","_size","_men","_amount","_grp","_i","_man1","_man","_leader","_classModuleFilters","_clean"];
+_pos = param [0,[0,0,0]];
+_side = param [1,0];
+_size = param [2,6];
+_grpId = param [3,nil];
+_classModuleFilters = param [4,[]];
+_syncedUnit = param [5,nil];
+_dissapearDistance = param [6,nil];
+_clean = param [7,false];
 
-_BLUmen = ["B_diver_F","B_diver_exp_F","B_diver_TL_F"];
-_OPFmen = ["O_diver_F","O_diver_exp_F","O_diver_TL_F"];
-_INDmen = ["I_diver_F","I_diver_exp_F","I_diver_TL_F"];
+if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
 
 _men = [];
+
 if(typeName _size == "ARRAY")then{
 	_amount = ((random (_size select 0)) + (_size select 1));
 }else{
@@ -19,29 +22,37 @@ if(typeName _size == "ARRAY")then{
 
 switch(_side)do{
 	case 0:{
-		_men = _BLUmen;
-		_BLUhq = createCenter west;
-		_BLUgrp = createGroup west;
-		_grp = _BLUgrp;
+		_hq = [1] call LV_centerInit;
+		_grp = createGroup west;
 	};
 	case 1:{
-		_men = _OPFmen;
-		_OPFhq = createCenter east;
-		_OPFgrp = createGroup east;
-		_grp = _OPFgrp;
+		_hq = [2] call LV_centerInit;
+		_grp = createGroup east;
 	};
 	case 2:{
-		_men = _INDmen;
-		_INDhq = createCenter resistance;
-		_INDgrp = createGroup resistance;
-		_grp = _INDgrp;
+		_hq = [3] call LV_centerInit;
+		_grp = createGroup resistance;
 	};
 };
 
-_i = 0; 
+_men = ([_classModuleFilters,[(_side + 1), 7]] call LV_classnames);
+
+_men = [_men] call LV_validateClassArrays;
+if((count _men) == 0)then{
+	_men = ([[],[(_side + 1), 7]] call LV_classnames);
+};
+
+_men = selectRandom _men;
+
+_i = 0;
 for "_i" from 0 to _amount do {
-	_man1 = _men select (floor(random(count _men)));
+	_man1 = selectRandom _men;
 	_man = _grp createUnit [_man1, _pos, [], 0, "NONE"];
+	if(_clean)then{
+		_man setVariable ["syncedUnit",_syncedUnit,false];
+		_man setVariable ["dissapearDistance",_dissapearDistance,false];
+		_man addEventHandler ["killed", {_this execVM "\modules_km\LV\LV_functions\LV_fnc_ACAIkilled.sqf"}];
+	};
 	sleep 0.3 ;
 };
 

@@ -1,61 +1,79 @@
-//ARMA3Alpha function LV_fnc_fullVehicle v1.1 - by SPUn / lostvar
-//Spawns random vehicle full of random units and returns driver 
-private ["_BLUhq","_BLUgrp","_veh","_grp","_OPFhq","_OPFgrp","_man1","_man","_i","_pos","_side","_BLUveh","_OPFveh","_INDveh","_men","_veh1","_vehSpots","_pos1","_vehicle","_vCrew","_allUnitsArray","_crew","_driver"];
-_pos = _this select 0;
-_side = _this select 1;
+//ARMA3Alpha function LV_fnc_fullVehicle v2.0 - by SPUn / Kaarto Media
+//Spawns random water vehicle full of units and returns the driver
+private ["_hq","_grp","_veh","_man1","_man","_i","_pos","_side","_vehSpots","_vehicle","_vCrew","_crew","_driver","_classModuleFilters","_cMember","_clean"];
+_pos = param [0,[0,0,0]];
+_side = param [1,0];
+_classModuleFilters = param [2,[]];
+_syncedUnit = param [3,nil];
+_dissapearDistance = param [4,nil];
+_clean = param [5,false];
 
-_BLUveh = ["B_Boat_Transport_01_F","B_SDV_01_F","B_Lifeboat","B_Boat_Armed_01_minigun_F"];
-_OPFveh = ["O_Boat_Transport_01_F","O_Boat_Armed_01_hmg_F","O_SDV_01_F","O_Lifeboat"];
-_INDveh = ["I_Boat_Transport_01_F","I_Boat_Armed_01_minigun_F","I_SDV_01_F"];
+if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
 
-_men = [];
 _veh = [];
 
 switch(_side)do{
-	case 0:{
-		_BLUhq = createCenter west;
-		_BLUgrp = createGroup west;
-		_veh = _BLUveh;
-		_grp = _BLUgrp;
-	};
 	case 1:{
-		_OPFhq = createCenter east;
-		_OPFgrp = createGroup east;
-		_veh = _OPFveh;
-		_grp = _OPFgrp;
+		_hq = [1] call LV_centerInit;
+		_grp = createGroup west;
 	};
 	case 2:{
-		_OPFhq = createCenter east;
-		_OPFgrp = createGroup east;
-		_veh = _OPFveh;
-		_grp = _OPFgrp;
+		_hq = [2] call LV_centerInit;
+		_grp = createGroup east;
 	};
-	
+	case 3:{
+		_hq = [3] call LV_centerInit;
+		_grp = createGroup resistance;
+	};
+	case 0:{
+		_hq = [0] call LV_centerInit;
+		_grp = createGroup civilian;
+	};
 };
+_veh = [_classModuleFilters,[(_side), 5]] call LV_classnames;
 
+_veh = [_veh] call LV_validateClassArrays;
+if((count _veh) == 0)then{
+	_veh = ([[],[(_side), 5]] call LV_classnames);
+};
+_veh = selectRandom _veh;
+if(typeName _veh == "ARRAY")then{_veh = selectRandom _veh;};
 
-_veh1 = _veh select (floor(random(count _veh)));
-_vehSpots = getNumber (configFile >> "CfgVehicles" >> _veh1 >> "transportSoldier");
-
-_pos1 = _pos; 
-
-_vehicle = createVehicle [_veh1, _pos1, [], 0, "NONE"];
-_vehicle setPos _pos1;
+_vehSpots = getNumber (configFile >> "CfgVehicles" >> _veh >> "transportSoldier");
+_vehicle = createVehicle [_veh, _pos, [], 0, "NONE"];
+if(_clean)then{
+	_vehicle setVariable ["syncedUnit",_syncedUnit,false];
+	_vehicle setVariable ["dissapearDistance",_dissapearDistance,false];
+	_vehicle addEventHandler ["killed", {_this execVM "LV\LV_functions\LV_fnc_ACAIkilled.sqf"}];
+};
+_vehicle setPos _pos;
 
 _vCrew = [_vehicle, _grp] call BIS_fnc_spawnCrew;
-//_allUnitsArray set [(count _allUnitsArray), _vehicle];
 _crew = crew _vehicle;
-				
+if(_clean)then{
+	for "_i" from 0 to ((count _crew) - 1) do{
+		_cMember = _crew select _i;
+		_cMember setVariable ["syncedUnit",_syncedUnit,false];
+		_cMember setVariable ["dissapearDistance",_dissapearDistance,false];
+		_cMember addEventHandler ["killed", {_this execVM "LV\LV_functions\LV_fnc_ACAIkilled.sqf"}];
+		sleep 0.001;
+	};
+};
+
 if(_vehSpots > 0)then{
-	_i = 1; 
+	_i = 1;
 	for "_i" from 1 to _vehSpots do {
-		_man1 = getText (configFile >> "CfgVehicles" >> _veh1 >> "crew");
-		_man = _grp createUnit [_man1, _pos1, [], 0, "NONE"];
+		_man1 = getText (configFile >> "CfgVehicles" >> _veh >> "crew");
+		_man = _grp createUnit [_man1, _pos, [], 0, "NONE"];
 		_man moveInCargo _vehicle;
+		if(_clean)then{
+			_man setVariable ["syncedUnit",_syncedUnit,false];
+			_man setVariable ["dissapearDistance",_dissapearDistance,false];
+			_man addEventHandler ["killed", {_this execVM "LV\LV_functions\LV_fnc_ACAIkilled.sqf"}];
+		};
 		sleep 0.3 ;
 	};
 };
 
 _driver = driver _vehicle;
 _driver
-
