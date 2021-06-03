@@ -21,8 +21,10 @@ while { alive _unit }do{
     _bPoss = [];
 	_i = 0;
 	while { ((_building buildingPos _i) select 0) != 0 } do {
-    	_bPoss set [count (_bPoss), (_building buildingPos _i)];
-		_i = _i + 1;
+    	if((lineIntersects [(AGLToASL (_building buildingPos _i)) vectorAdd [0,0,1], (AGLToASL (_building buildingPos _i)) vectorAdd [0,0,10]]) == true)then{
+    		_bPoss set [count (_bPoss), (_building buildingPos _i)];
+		};
+        _i = _i + 1;
         sleep 0.001;
 	};
 	_i2 = 0;

@@ -118,6 +118,7 @@ if(isNil("LV_ACskills"))then{LV_ACskills = compileFinal preprocessFile "LV\LV_fu
 if(isNil("LV_RandomSpot"))then{LV_RandomSpot = compileFinal preprocessFile "LV\LV_functions\LV_fnc_randomSpot.sqf";};
 if(isNil("LV_vehicleInit"))then{LV_vehicleInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_vehicleInit.sqf";};
 if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 _choppers = ([_classModuleFilters,[(_side), 3]] call LV_classnames);
 
@@ -153,6 +154,7 @@ _men = [_men] call LV_validateClassArrays;
 if((count _men) == 0)then{
 	_men = ([[],[(_side), 6]] call LV_classnames);
 };
+_men = [_men,['crew','Crew','pilot','Pilot']] call LV_removeClasses;
 _men = selectRandom _men;
 
 //If *exact* is false, find landing spot which is not close another ones: //THIS block is fixed by GITS, now choppers should land!//yet another fix by SPUn

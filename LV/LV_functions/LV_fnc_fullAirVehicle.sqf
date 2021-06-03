@@ -1,6 +1,6 @@
 //ARMA3Alpha function LV_fnc_fullAirVehicle v3.0 - by SPUn / Kaarto Media
 //Spawns random air vehicle full of units and returns the driver
-private ["_hq","_veh","_grp","_man1","_man","_i","_pos","_side","_vehSpots","_vehicle","_vCrew","_crew","_driver","_c","_classModuleFilters","_cMember","_clean"];
+private ["_hq","_veh","_grp","_man1","_man","_i","_pos","_side","_vehSpots","_vehicle","_vCrew","_crew","_driver","_c","_classModuleFilters","_cMember","_clean","_menClassesFinal","_menClasses"];
 _pos = param [0,[0,0,0]];
 _side = param [1,0];
 _classModuleFilters = param [2,[]];
@@ -9,6 +9,7 @@ _dissapearDistance = param [4,nil];
 _clean = param [5,false];
 
 if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 _veh = [];
 
@@ -60,9 +61,18 @@ if(_clean)then{
 };
 
 if(_vehSpots > 0)then{
-_i = 1;
+	_menClasses = [_classModuleFilters,[(_side), 6]] call LV_classnames;
+	_menClasses = [_menClasses] call LV_validateClassArrays;
+	if((count _menClasses) == 0)then{
+		_menClasses = [[],[(_side), 6]] call LV_classnames;
+	};
+	_menClasses = [_menClasses,['crew','Crew','pilot','Pilot']] call LV_removeClasses;
+
+	_i = 1;
 	for "_i" from 1 to _vehSpots do {
-		_man1 = getText (configFile >> "CfgVehicles" >> _veh >> "crew");
+		//_man1 = getText (configFile >> "CfgVehicles" >> _veh >> "crew"); //Crewmen
+		if(typeName _menClasses == "ARRAY")then{_menClassesFinal = selectRandom _menClasses;}else{_menClassesFinal = _menClasses;};
+		_man1 = selectRandom _menClassesFinal; //Random infantry class for selected side
 		_man = _grp createUnit [_man1, _pos, [], 0, "NONE"];
 		_man moveInCargo _vehicle;
 		if(_clean)then{

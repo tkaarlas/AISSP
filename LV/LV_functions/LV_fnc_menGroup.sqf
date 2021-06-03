@@ -11,6 +11,7 @@ _dissapearDistance = param [6,nil];
 _clean = param [7,false];
 
 if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 _men = [];
 
@@ -42,6 +43,7 @@ if((count _men) == 0)then{
 	_men = ([[],[(_side + 1), 6]] call LV_classnames);
 };
 
+_men = [_men,['crew','Crew','pilot','Pilot']] call LV_removeClasses;
 _men = selectRandom _men;
 
 _i = 0;

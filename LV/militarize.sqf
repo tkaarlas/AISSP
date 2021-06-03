@@ -82,6 +82,7 @@ if(isNil("LV_fullLandVehicle"))then{LV_fullLandVehicle = compileFinal preprocess
 if(isNil("LV_fullAirVehicle"))then{LV_fullAirVehicle = compileFinal preprocessFile "LV\LV_functions\LV_fnc_fullAirVehicle.sqf";};
 if(isNil("LV_fullWaterVehicle"))then{LV_fullWaterVehicle = compileFinal preprocessFile "LV\LV_functions\LV_fnc_fullWaterVehicle.sqf";};
 if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 if(typeName _menRatio == "ARRAY")then{
 	_menAmount = (_menRatio select 0) + (random (_menRatio select 1));
@@ -121,6 +122,9 @@ _menArray = [_menArray] call LV_validateClassArrays;
 if((count _menArray) == 0)then{
 	_menArray = ([[],[(_side), 6]] call LV_classnames);
 };
+
+_menArray = [_menArray,['crew','Crew','pilot','Pilot']] call LV_removeClasses;
+
 _menArray = selectRandom _menArray;
 _diveArray = ([_classModuleFilters,[(_side), 7]] call LV_classnames);
 _diveArray = [_diveArray] call LV_validateClassArrays;

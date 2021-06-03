@@ -91,6 +91,7 @@ if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compileFinal preproce
 if(isNil("LV_classnames"))then{LV_classnames = compileFinal preprocessFile "LV\LV_functions\LV_fnc_classnames.sqf";};
 if(isNil("LV_validateClassArrays"))then{LV_validateClassArrays = compileFinal preprocessFile "LV\LV_functions\LV_fnc_validateClassArrays.sqf";};
 if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 //Classnames:
 _choppers = ([_classModuleFilters,[(_side), 3]] call LV_classnames);
@@ -126,6 +127,7 @@ _men = [_men] call LV_validateClassArrays;
 if((count _men) == 0)then{
 	_men = ([[],[(_side), 6]] call LV_classnames);
 };
+_men = [_men,['crew','Crew','pilot','Pilot']] call LV_removeClasses;
 _men = selectRandom _men;
 
 if(_mp)then{

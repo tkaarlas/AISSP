@@ -87,6 +87,7 @@ if(isNil("LV_RandomSpot"))then{LV_RandomSpot = compileFinal preprocessFile "LV\L
 if(_mp)then{if(isNil("LV_GetPlayers"))then{LV_GetPlayers = compileFinal preprocessFile "LV\LV_functions\LV_fnc_getPlayers.sqf";};};
 if(isNil("LV_FindLandPosition"))then{LV_FindLandPosition = compileFinal preprocessFile "LV\LV_functions\LV_fnc_findLandPosition.sqf";};
 if(isNil("LV_IsInMarker"))then{LV_IsInMarker = compileFinal preprocessFile "LV\LV_functions\LV_fnc_isInMarker.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 if(isNil("LV_ACS_activeGroups"))then{LV_ACS_activeGroups = [];};
 if(isNil("LV_AI_westGroups"))then{LV_AI_westGroups = [];};

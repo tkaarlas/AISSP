@@ -65,6 +65,7 @@ if(isNil("LV_ACskills"))then{LV_ACskills = compileFinal preprocessFile "LV\LV_fu
 if(isNil("LV_vehicleInit"))then{LV_vehicleInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_vehicleInit.sqf";};
 if(isNil("LV_nearestBuilding"))then{LV_nearestBuilding = compileFinal preprocessFile "LV\LV_functions\LV_fnc_nearestBuilding.sqf";};
 if(isNil("LV_centerInit"))then{LV_centerInit = compileFinal preprocessFile "LV\LV_functions\LV_fnc_centerInit.sqf";};
+if(isNil("LV_removeClasses"))then{LV_removeClasses = compileFinal preprocessFile "LV\LV_functions\LV_fnc_removeClasses.sqf";};
 
 switch (_sideOption) do {
     case 1: {
@@ -86,6 +87,7 @@ _menArray = [_menArray] call LV_validateClassArrays;
 if((count _menArray) == 0)then{
 	_menArray = ([[],[(_sideOption), 6]] call LV_classnames);
 };
+_menArray = [_menArray,['crew','Crew','pilot','Pilot']] call LV_removeClasses;
 _menArray = selectRandom _menArray;
 
 if(_center in allMapMarkers)then{
@@ -112,7 +114,9 @@ while { _a < (count _buildings) } do {
 	_building = (_buildings select _a);
 	_i = 0;
 	while { ((_building buildingPos _i) select 0) != 0 } do {
-		_bPoss set [count (_bPoss), (_building buildingPos _i)];
+		if((lineIntersects [(AGLToASL (_building buildingPos _i)) vectorAdd [0,0,1], (AGLToASL (_building buildingPos _i)) vectorAdd [0,0,10]]) == true)then{
+    		_bPoss set [count (_bPoss), (_building buildingPos _i)];
+		};
 		_i = _i + 1;
 		sleep 0.001;
 	};
