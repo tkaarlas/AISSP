@@ -23,6 +23,21 @@ class config_aissp
 			ships[] = {""};
 		};
 
+		class ambientExplosionsPlanes
+		{
+			side = 2;
+			men[] = {""};
+			men2[] = {""};
+			men3[] = {""};
+			menSF[] = {""};
+			divers[] = {""};
+			cars[] = {""};
+			tanks[] = {""};
+			helicopters[] = {""};
+			planes[] = {"B_Plane_CAS_01_Cluster_F"};
+			ships[] = {""};
+		};
+
 		//DEFAULT TEMPLATES. Modify only if you know what you are doing.
 		class CIV
 		{

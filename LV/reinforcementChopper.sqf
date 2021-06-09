@@ -50,9 +50,7 @@
 	EXAMPLE: 	nul = [player,false,2,3,false,true,player,"random",1000,true,false,8,0.75,[false,true,false,true],nil,nil,33,false,false,["ALL"]] execVM "LV\reinforcementChopper.sqf";
 */
 if (!isServer)exitWith{};
-private ["_BLUmen3","_mp","_smoke","_choppers","_OPFarrays","_BLUarrays","_INDgrp","_INDhq","_INDmen","_OPFmen2","_BLUmen2","_captive","_patrol","_heliT","_chopperTypes","_chopperType","_setInit2","_setInit","_c0","_customInit","_tPos","_exactPos","_skls","_skills","_grpSize","_cycle","_precise","_man2","_direction","_distance","_targetM","_i2","_heliPad","_targetPos","_side","_targetMarker","_BLUmen","_OPFmen","_men","_hq","_grp1","_grp2","_man1","_man","_dir","_range","_pos","_heli","_vehSpots","_i","_wp1","_input","_logic","_isActivated"];
-
-private ["_tMarker","_mGroup","_smoo1","_smoo2","_smoo3","_smoo4","_classModule","_classModuleFilters"];
+private ["_BLUmen3","_mp","_smoke","_choppers","_OPFarrays","_BLUarrays","_INDgrp","_INDhq","_INDmen","_OPFmen2","_BLUmen2","_captive","_patrol","_heliT","_chopperTypes","_chopperType","_setInit2","_setInit","_c0","_customInit","_tPos","_exactPos","_skls","_skills","_grpSize","_cycle","_precise","_man2","_direction","_distance","_targetM","_i2","_heliPad","_targetPos","_side","_targetMarker","_BLUmen","_OPFmen","_men","_hq","_grp1","_grp2","_man1","_man","_dir","_range","_pos","_heli","_vehSpots","_i","_wp1","_input","_logic","_isActivated","_tMarker","_mGroup","_smoo1","_smoo2","_smoo3","_smoo4","_classModule","_classModuleFilters","_crew","_numCargo","_cfg"];
 
 _tPos = param [0];
 _exactPos = param [1,true];
@@ -143,6 +141,8 @@ switch(_side)do{
 	};
 };
 
+_choppers = [_choppers,['UAV','Light']] call LV_removeClasses;
+
 _chopperTypes = [_choppers] call LV_validateClassArrays;
 if((count _chopperTypes) == 0)then{
 	_chopperTypes = ([[],[(_side), 3]] call LV_classnames);
@@ -197,10 +197,11 @@ _heliPad = createVehicle ["Land_helipadEmpty_F", _targetPos, [], 0, "NONE"];
 
 if(typeName _direction == "STRING")then{_dir = random 360;}else{_dir = _direction;};
 _range = _distance;
-_pos = [(_targetPos select 0) + (sin _dir) * _range, (_targetPos select 1) + (cos _dir) * _range, 0];
+_pos = [(_targetPos select 0) + (sin _dir) * _range, (_targetPos select 1) + (cos _dir) * _range, 200];
 _heli = createVehicle [_heliT, _pos, [], 0, "FLY"];
+_heli setPosATL _pos;
+_heli setDir _dir + 180;
 
-private ["_numCargo","_cfg"];
 _cfg = (configFile >> "CfgVehicles" >> _heliT);
 _numCargo = count("if ( isText(_x >> 'proxyType') && { getText(_x >> 'proxyType') isEqualTo 'CPCargo' } ) then {true};"configClasses ( _cfg >> "Turrets" )) + getNumber ( _cfg >> "transportSoldier" );
 
@@ -210,13 +211,10 @@ if(_grpSize > _numCargo)then{
 	_vehSpots = _grpSize;
 };
 
-_man1 = selectRandom _men;
-_man = _grp1 createUnit [_man1, _pos, [], 0, "NONE"];
-_man moveInDriver _heli;
-_man setUnitRank "SERGEANT";
-if(_precise)then{_man setBehaviour "CARELESS";};
+_crew = [_heli,_grp1] call bis_fnc_spawncrew;
+if(_precise)then{(driver _heli) setBehaviour "CARELESS";};
 
-[_man,_heli,_targetPos] spawn {
+[(driver _heli),_heli,_targetPos] spawn {
 	private ["_man","_heli","_targetPos"];
 	_man = _this select 0;
 	_heli = _this select 1;
@@ -266,7 +264,10 @@ if(_captive)then{
 	{ _x setCaptive true;sleep 0.001; }forEach units _grp2;
 };
 
+//_heli setVelocity [(sin (direction _heli) * 100),(cos (direction _heli) * 100),0];
 _heli doMove _targetPos;
+_heli flyInHeight 200;
+
 while { _heli distance _targetPos > 260 } do { sleep 4; };
 (driver _heli) setBehaviour "CARELESS";
 //while {!(unitReady _heli)}do{sleep 2;};
@@ -330,7 +331,7 @@ _grp2 leaveVehicle _heli;
 	_x setBehaviour "AWARE";
 } forEach units _grp2;
 _grp2 setCombatMode "RED";
-while { (count (crew _heli)) > 1 } do { sleep 2;  };
+while { ((count (crew _heli)) - (count (_crew))) > 1 } do { sleep 2;  };
 _heli doMove _pos;
 
 if(alive _heli)then{_heli setFuel 1;};
@@ -381,7 +382,7 @@ while { (_heli distance _pos > 200) } do { sleep 4; };
 if((!_exactPos)&&((_heli distance _targetPos) > 50))then{REKA60padArray = REKA60padArray - [_targetPos];};
 
 if((_heli distance _pos < 200))exitWith{
-	deleteVehicle _man;
+	{ deleteVehicle _x; } forEach units _grp1;
 	deleteVehicle _heli;
 	waituntil {sleep 1;(count units _grp1)==0};
     deletegroup _grp1;

@@ -115,6 +115,8 @@ switch(_side)do{
 	};
 };
 
+_choppers = [_choppers,['UAV','Light']] call LV_removeClasses;
+
 _choppers = [_choppers] call LV_validateClassArrays;
 if((count _choppers) == 0)then{
 	_choppers = ([[],[(_side), 3]] call LV_classnames);
