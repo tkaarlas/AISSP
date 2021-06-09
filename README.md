@@ -1,5 +1,5 @@
 # AISSP
-ARMA 3 - AI Spawn Script Pack v1.1
+ARMA 3 - AI Spawn Script Pack v1.15
 
 INSTALLATION:
 
